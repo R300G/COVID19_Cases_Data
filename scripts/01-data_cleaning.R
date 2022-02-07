@@ -1,36 +1,35 @@
 #### Preamble ####
-# Purpose: Clean the survey data downloaded from [...UPDATE ME!!!!!]
-# Author: Rohan Alexander [CHANGE THIS TO YOUR NAME!!!!]
-# Data: 3 January 2021
-# Contact: rohan.alexander@utoronto.ca [PROBABLY CHANGE THIS ALSO!!!!]
+# Purpose: Clean the survey data downloaded from https://open.toronto.ca/dataset/covid-19-cases-in-toronto/
+# Author: Charles Lu
+# Data: 3 Feb 2021
+# Contact: charlesjiahong.lu@mail.utoronto.ca
 # License: MIT
-# Pre-requisites: 
-# - Need to have downloaded the ACS data and saved it to inputs/data
-# - Don't forget to gitignore it!
-# - Change these to yours
-# Any other information needed?
-
 
 #### Workspace setup ####
-# Use R Projects, not setwd().
-library(haven)
 library(tidyverse)
-# Read in the raw data. 
-raw_data <- readr::read_csv("inputs/data/raw_data.csv"
-                     )
-# Just keep some variables that may be of interest (change 
-# this depending on your interests)
-names(raw_data)
+library(janitor)
+library(dplyr)
+# Read in the raw data.
+covid19_cases <- readr::read_csv("inputs/data/COVID19_cases.csv")
 
-reduced_data <- 
-  raw_data %>% 
-  select(first_col, 
-         second_col)
-rm(raw_data)
-         
+# clean variable names and select the variables I decided to use
+cleaned_covid19_cases <-
+  covid19_cases %>%
+  clean_names() %>%
+  select(
+    age_group, source_of_infection, episode_date, client_gender,
+    ever_hospitalized, ever_in_icu, ever_intubated
+  )%>% dplyr::rename(infected_date = episode_date,gender=client_gender)
+# added a new column named severity using the information from ever_hospitalized, ever_in_icu, ever_intubated, and removed the 3 columns
+cleaned_covid19_cases <- cleaned_covid19_cases %>%
+  mutate(severity = ifelse(ever_intubated == "Yes", "intubated",
+    ifelse(ever_in_icu == "Yes", "in_icu",
+      ifelse(ever_hospitalized == "Yes", "hospitalized", "not_hospitalized")
+    )
+  )) %>%
+  select(-c(ever_hospitalized, ever_in_icu, ever_intubated))
+#sort levels in severity
+cleaned_covid19_cases$severity <- factor(cleaned_covid19_cases$severity, levels = c("intubated","in_icu","hospitalized","not_hospitalized"))
+write_csv(x=cleaned_covid19_cases, file = "inputs/data/cleaned_covid19_cases.csv")
 
-#### What's next? ####
 
-
-
-         
